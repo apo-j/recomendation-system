@@ -1,0 +1,50 @@
+ratings = read.csv("~/movie_rating.csv")
+head(ratings)
+dim(ratings)
+Str(ratings)
+levels(ratings$critic)
+levels(ratings$title)
+sort(unique(ratings$rating),decreasing = F)
+movie_ratings = as.data.frame(acast(ratings, title~critic,value.var="rating"))
+View(movie_ratings)
+
+sim_users = cor(movie_ratings[,1:6],use="complete.obs")
+View(sim_users)
+
+rating_critic = setDT(movie_ratings[colnames(movie_ratings)[6]],keep.rownames = TRUE)[]
+ names(rating_critic) = c('title','rating')
+ View(rating_critic)
+titles_na_critic = rating_critic$title[is.na(rating_critic$rating)]
+ titles_na_critic
+ratings_t =ratings[ratings$title %in% titles_na_critic,]
+ View(ratings_t)
+x = (setDT(data.frame(sim_users[,6]),keep.rownames = TRUE)[])
+ names(x) = c('critic','similarity')
+ ratings_t = merge(x = ratings_t, y = x, by = "critic", all.x = TRUE)
+ View(ratings_t)
+ratings_t$sim_rating = ratings_t$rating*ratings_t$similarity
+ ratings_t
+result = ratings_t %>% group_by(title) %>% summarise(sum(sim_rating)/sum(similarity))
+ result
+mean(rating_critic$rating,na.rm = T)
+generateRecommendations <- function(userId){
+ rating_critic = setDT(movie_ratings[colnames(movie_ratings)
+ [userId]],keep.rownames = TRUE)[]
+ names(rating_critic) = c('title','rating')
+ titles_na_critic = rating_critic$title[is.na(rating_critic$rating)]
+ ratings_t = ratings[ratings$title %in% titles_na_critic,]
+ x = (setDT(data.frame(sim_users[,userId]),keep.rownames = TRUE) [])
+ names(x) = c('critic','similarity')
+ ratings_t = merge(x = ratings_t, y = x, by = "critic", all.x = TRUE)
+ #mutiply rating with similarity values
+ ratings_t$sim_rating = ratings_t$rating*ratings_t$similarity
+ #predicting the non rated titles
+ result = ratings_t %>% group_by(title) %>% summarise(sum(sim_rating)/sum(similarity))
+ return(result)
+ }
+generateRecommendations(1)
+generateRecommendations(2)
+generateRecommendations(3)
+generateRecommendations(4)
+generateRecommendations(5)
+generateRecommendations(6)

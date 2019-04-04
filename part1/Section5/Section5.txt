@@ -1,0 +1,96 @@
+path = "~/u_dat1.txt"
+import pandas as pd
+df = pd.read_csv(path, sep='\t')
+type(df)
+df.head()
+df.columns
+df.shape
+
+import matplotlib.pyplot as plt
+df.columns = ['UserId','MovieId','Rating','TimeStamp']
+plt.hist(df['Rating'])
+plt.show()
+df.groupby(['Rating'])['UserId'].count()
+plt.hist(df.groupby(['MovieId'])['MovieId'].count())
+plt.show()
+
+n_users = df.UserId.unique().shape[0] 
+n_items = df['MovieId'].unique().shape[0] 
+print(str(n_users) + ' users') 
+print(str(n_items) + ' movies') 
+
+import numpy as np
+ratings = np.zeros((n_users, n_items)) 
+
+for  row in df.itertuples():
+	ratings[row[1]-1, row[2]-1] = row[3] 
+
+type(ratings)
+ratings.shape
+ratings
+sparsity = float(len(ratings.nonzero()[0]))
+sparsity /= (ratings.shape[0] * ratings.shape[1])
+sparsity *= 100 
+print('Sparsity: {:4.2f}%'.format(sparsity))
+
+from sklearn.cross_validation import train_test_split
+ratings_train, ratings_test = train_test_split(ratings, test_size=0.33, random_state=42)
+ratings_test.shape
+ratings_train.shape
+
+import numpy as np
+import sklearn
+
+dist_out = 1-sklearn.metrics.pairwise.cosine_distances(ratings_train)
+type(dist_out)
+dist_out.shape
+dist_out
+user_pred = dist_out.dot(ratings_train)/np.array([np.abs(dist_out).sum(axis=1)]).T
+
+from sklearn.metrics import mean_squared_error
+def get_mse(pred, actual):
+    # Ignore nonzero terms.
+    pred = pred[actual.nonzero()].flatten()
+    actual = actual[actual.nonzero()].flatten()
+    return mean_squared_error(pred, actual)
+
+get_mse(user_pred, ratings_train)
+get_mse(user_pred, ratings_test)
+
+k=5
+from sklearn.neighbors import NearestNeighbors
+neigh = NearestNeighbors(k,'cosine')
+neigh.fit(ratings_train)
+top_k_distances,top_k_users = neigh.kneighbors(ratings_train, return_distance=True)
+top_k_distances.shape
+top_k_users.shape
+top_k_users[0]
+
+user_pred_k = np.zeros(ratings_train.shape)
+for i in range(ratings_train.shape[0]):
+    user_pred_k[i,:] =   top_k_distances[i].T.dot(ratings_train[top_k_users][i])/np.array([np.abs(top_k_distances[i].T).sum(axis=0)]).T
+user_pred_k.shape
+user_pred_k
+get_mse(user_pred_k, ratings_train)
+get_mse(user_pred_k, ratings_test)
+
+k = ratings_train.shape[1]
+neigh = NearestNeighbors(k,'cosine')
+neigh.fit(ratings_train.T)
+top_k_distances,top_k_users = neigh.kneighbors(ratings_train.T, return_distance=True)
+top_k_distances.shape
+item_pred = ratings_train.dot(top_k_distances) / np.array([np.abs(top_k_distances).sum(axis=1)])
+item_pred.shape
+item_pred
+get_mse(item_pred, ratings_train)
+get_mse(item_pred, ratings_test)
+
+k = 40
+neigh2 = NearestNeighbors(k,'cosine')
+neigh2.fit(ratings_train.T)
+top_k_distances,top_k_movies = neigh2.kneighbors(ratings_train.T,return_distance=True)
+pred = np.zeros(ratings_train.T.shape)
+for i in range(ratings_train.T.shape[0]):
+     pred[i,:] = top_k_distances[i].dot(ratings_train.T[top_k_users][i])/np.array([np.abs(top_k_distances[i]).sum(axis=0)]).T
+	 get_mse(item_pred_k, ratings_train)
+	 get_mse(item_pred_k, ratings_test)
