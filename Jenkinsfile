@@ -14,7 +14,7 @@ pipeline {
             steps {
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/prod']],
+                    branches: [[name: '*/hook']],
                     doGenerateSubmoduleConfigurations: false,
                     submoduleCfg: [],
                     userRemoteConfigs: [[url: 'https://github.com/apo-j/recomendation-system.git']]
